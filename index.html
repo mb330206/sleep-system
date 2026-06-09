@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>睡眠紀錄系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --color-primary: #3C3489;
+    --color-primary-light: #EEEDFE;
+    --color-primary-mid: #7F77DD;
+    --color-accent: #0F6E56;
+    --color-accent-light: #E1F5EE;
+    --color-accent-mid: #1D9E75;
+    --color-bg: #f8f7fc;
+    --color-surface: #ffffff;
+    --color-border: rgba(63,52,137,0.12);
+    --color-text: #1a1a2e;
+    --color-text-muted: #6b6a80;
+    --color-error: #A32D2D;
+    --color-error-light: #FCEBEB;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 22px;
+    --shadow-sm: 0 1px 4px rgba(63,52,137,0.08);
+    --shadow-md: 0 4px 20px rgba(63,52,137,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    min-height: 100vh;
+  }
+
+  /* ── CONFIG BANNER ── */
+  #config-banner {
+    background: #fff3cd;
+    border-bottom: 1px solid #ffc107;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.82rem;
+    color: #856404;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  #config-banner.hidden { display: none; }
+  #config-banner strong { font-weight: 700; }
+  #config-banner a { color: #856404; }
+
+  /* ── SETUP PAGE ── */
+  #setup-page {
+    display: none;
+    max-width: 520px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+  }
+
+  .setup-card {
+    background: var(--color-surface);
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .setup-card h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 0.4rem;
+  }
+
+  .setup-card p {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+
+  .setup-card label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+    margin-top: 0.9rem;
+  }
+
+  .setup-card input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    color: var(--color-text);
+    background: var(--color-bg);
+    font-family: monospace;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .setup-card input:focus {
+    border-color: var(--color-primary-mid);
+    box-shadow: 0 0 0 3px rgba(127,119,221,0.15);
+    background: #fff;
+  }
+
+  .setup-save-btn {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 12px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .setup-save-btn:hover { background: #4b42a5; }
+
+  /* ── ADMIN PAGE ── */
+  #admin-page {
+    padding: 2rem 1.5rem 3rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .admin-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .admin-header .moon-icon {
+    width: 52px; height: 52px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 26px;
+  }
+
+  .admin-header h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .admin-header p {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin-top: 0.35rem;
+  }
+
+  .admin-toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-btn {
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 0.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    transition: all 0.2s;
+  }
+
+  .toolbar-btn:hover { background: var(--color-primary-light); }
+  .toolbar-btn.danger { color: var(--color-error); }
+  .toolbar-btn.danger:hover { background: var(--color-error-light); }
+
+  .qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .qr-card {
+    background: var(--color-surface);
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+
+  .qr-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .qr-card .qr-wrap {
+    width: 100px; height: 100px;
+    margin: 0 auto 0.6rem;
+  }
+
+  .qr-card .qr-wrap canvas,
+  .qr-card .qr-wrap img {
+    border-radius: 6px;
+  }
+
+  .qr-card .member-id {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    letter-spacing: 0.03em;
+  }
+
+  .qr-card .record-count {
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  /* ── MEMBER PAGE ── */
+  #member-page {
+    display: none;
+    min-height: 100vh;
+    background: var(--color-bg);
+  }
+
+  .member-topbar {
+    background: var(--color-primary);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .member-topbar .back-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .member-topbar .back-btn:hover { background: rgba(255,255,255,0.25); }
+
+  .member-topbar h2 {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .member-topbar .member-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .member-content {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  /* Form card */
+  .form-card {
+    background: var(--color-surface);
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.25rem;
+  }
+
+  .form-card h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .form-card h3 .dot {
+    width: 7px; height: 7px;
+    background: var(--color-primary-mid);
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .form-row {
+    margin-bottom: 1rem;
+  }
+
+  .form-row:last-child { margin-bottom: 0; }
+
+  .form-row label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  .form-row input[type="date"],
+  .form-row input[type="time"],
+  .form-row input[type="number"],
+  .form-row textarea,
+  .form-row select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    color: var(--color-text);
+    background: var(--color-bg);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-row input:focus,
+  .form-row textarea:focus,
+  .form-row select:focus {
+    border-color: var(--color-primary-mid);
+    box-shadow: 0 0 0 3px rgba(127,119,221,0.15);
+    background: #fff;
+  }
+
+  .form-row textarea {
+    resize: vertical;
+    min-height: 72px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Quality slider */
+  .quality-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .quality-wrap input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-primary-light);
+    outline: none;
+  }
+
+  .quality-wrap input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(63,52,137,0.3);
+  }
+
+  .quality-label {
+    min-width: 32px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .quality-hint {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+  }
+
+  /* Tags (sleep factors) */
+  .tag-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .tag-item {
+    padding: 5px 12px;
+    border: 0.5px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .tag-item.selected {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary-mid);
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .submit-btn:hover { background: #4b42a5; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--color-accent);
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 24px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(15,110,86,0.3);
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+    white-space: nowrap;
+  }
+
+  .toast.error { background: var(--color-error); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Loading */
+  .loading-spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* History */
+  .history-empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.83rem;
+    padding: 1.5rem 0;
+  }
+
+  .record-item {
+    border: 0.5px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.6rem;
+    background: var(--color-surface);
+  }
+
+  .record-item .rec-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+
+  .record-item .rec-date {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  .record-item .rec-quality {
+    font-size: 0.75rem;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .record-item .rec-detail {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .record-item .rec-note {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 0 0 8px;
+    transition: color 0.2s;
+  }
+  .del-btn:hover { color: var(--color-error); }
+
+  @media (max-width: 400px) {
+    .two-col { grid-template-columns: 1fr; }
+    .qr-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ CONFIG BANNER ═══════════════ -->
+<div id="config-banner">
+  ⚠️ <strong>尚未設定 Supabase</strong>：請點擊「⚙️ 設定資料庫」填入你的 Supabase URL 與 API Key，資料才能儲存到雲端。
+  <button class="toolbar-btn" onclick="showSetup()" style="margin-left:auto">⚙️ 設定資料庫</button>
+</div>
+
+<!-- ═══════════════ SETUP PAGE ═══════════════ -->
+<div id="setup-page">
+  <div class="setup-card">
+    <h2>🔧 Supabase 設定</h2>
+    <p>
+      前往 <a href="https://supabase.com" target="_blank">supabase.com</a> 建立免費專案後，
+      在「Project Settings → API」取得以下資訊，並在資料庫中執行下方 SQL 建立資料表。
+    </p>
+
+    <label>Supabase Project URL</label>
+    <input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+
+    <label>Supabase anon public Key</label>
+    <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+
+    <div style="margin-top:1.2rem;background:var(--color-bg);border-radius:var(--radius-md);padding:1rem;font-size:0.75rem;font-family:monospace;line-height:1.7;color:var(--color-text-muted)">
+      -- 在 Supabase SQL Editor 執行：<br>
+      CREATE TABLE sleep_records (<br>
+      &nbsp;&nbsp;id bigint generated always as identity primary key,<br>
+      &nbsp;&nbsp;member_id text not null,<br>
+      &nbsp;&nbsp;date text not null,<br>
+      &nbsp;&nbsp;sleep_time text,<br>
+      &nbsp;&nbsp;wake_time text,<br>
+      &nbsp;&nbsp;quality integer,<br>
+      &nbsp;&nbsp;duration text,<br>
+      &nbsp;&nbsp;factors text[],<br>
+      &nbsp;&nbsp;note text,<br>
+      &nbsp;&nbsp;created_at timestamptz default now()<br>
+      );<br><br>
+      -- 啟用 Row Level Security（建議）<br>
+      ALTER TABLE sleep_records ENABLE ROW LEVEL SECURITY;<br><br>
+      -- 允許所有讀寫（如需驗證請自行調整）<br>
+      CREATE POLICY "allow_all" ON sleep_records FOR ALL USING (true) WITH CHECK (true);
+    </div>
+
+    <button class="setup-save-btn" onclick="saveConfig()">儲存設定並繼續</button>
+    <button class="toolbar-btn" onclick="cancelSetup()" style="width:100%;margin-top:0.75rem">取消</button>
+  </div>
+</div>
+
+<!-- ═══════════════ ADMIN PAGE ═══════════════ -->
+<div id="admin-page" style="display:none">
+  <div class="admin-header">
+    <div class="moon-icon">🌙</div>
+    <h1>睡眠紀錄系統</h1>
+    <p>點擊會員 QR Code 即可模擬掃碼進入填寫頁面</p>
+  </div>
+  <div class="admin-toolbar">
+    <button class="toolbar-btn" onclick="showSetup()">⚙️ 資料庫設定</button>
+    <button class="toolbar-btn" onclick="refreshCounts()">🔄 重新整理筆數</button>
+  </div>
+  <div class="qr-grid" id="qr-grid"></div>
+</div>
+
+<!-- ═══════════════ MEMBER PAGE ═══════════════ -->
+<div id="member-page">
+  <div class="member-topbar">
+    <button class="back-btn" onclick="goBack()">← 返回</button>
+    <h2>睡眠紀錄</h2>
+    <span class="member-badge" id="member-label"></span>
+  </div>
+
+  <div class="member-content">
+
+    <!-- New Record Form -->
+    <div class="form-card">
+      <h3><span class="dot"></span>新增今日紀錄</h3>
+
+      <div class="form-row">
+        <label>日期</label>
+        <input type="date" id="f-date">
+      </div>
+
+      <div class="two-col">
+        <div class="form-row">
+          <label>入睡時間</label>
+          <input type="time" id="f-sleep-time">
+        </div>
+        <div class="form-row">
+          <label>起床時間</label>
+          <input type="time" id="f-wake-time">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>睡眠品質（1–10）</label>
+        <div class="quality-wrap">
+          <input type="range" min="1" max="10" value="5" id="f-quality"
+            oninput="document.getElementById('q-val').textContent=this.value; updateQualityColor(this.value)">
+          <span class="quality-label" id="q-val">5</span>
+        </div>
+        <div class="quality-hint" id="q-hint">還可以</div>
+      </div>
+
+      <div class="form-row">
+        <label>影響因素（可複選）</label>
+        <div class="tag-group" id="tag-group">
+          <span class="tag-item" onclick="toggleTag(this)">壓力大</span>
+          <span class="tag-item" onclick="toggleTag(this)">咖啡因</span>
+          <span class="tag-item" onclick="toggleTag(this)">運動</span>
+          <span class="tag-item" onclick="toggleTag(this)">手機使用</span>
+          <span class="tag-item" onclick="toggleTag(this)">噪音</span>
+          <span class="tag-item" onclick="toggleTag(this)">光線</span>
+          <span class="tag-item" onclick="toggleTag(this)">飲食</span>
+          <span class="tag-item" onclick="toggleTag(this)">情緒低落</span>
+          <span class="tag-item" onclick="toggleTag(this)">身體不適</span>
+          <span class="tag-item" onclick="toggleTag(this)">熬夜</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>備註</label>
+        <textarea id="f-note" placeholder="今晚睡得怎麼樣？有特別的感受嗎…"></textarea>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="submitRecord()">儲存睡眠紀錄</button>
+    </div>
+
+    <!-- History -->
+    <div class="form-card">
+      <h3><span class="dot"></span>歷史紀錄</h3>
+      <div id="history-list"><div class="history-empty">載入中…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONFIGURATION — stored in localStorage
+   ═══════════════════════════════════════════════ */
+let SUPABASE_URL = '';
+let SUPABASE_KEY = '';
+
+function loadConfig() {
+  SUPABASE_URL = localStorage.getItem('sb_url') || '';
+  SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+  SUPABASE_URL = 'https://oftpiqotjqjjsedvrwff.supabase.co'; 
+  SUPABASE_KEY = 'sb_publishable_qnV-3naqDoHdvqvdK6Ieeg_skovkNNU';
+}
+
+function isConfigured() {
+  return SUPABASE_URL && SUPABASE_KEY;
+}
+
+/* ═══════════════════════════════════════════════
+   SUPABASE REST API helpers
+   ═══════════════════════════════════════════════ */
+async function sbFetch(path, options = {}) {
+  if (!isConfigured()) throw new Error('Supabase 尚未設定');
+  const url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1' + path;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': options.prefer || '',
+    ...options.extraHeaders
+  };
+  const res = await fetch(url, { method: options.method || 'GET', headers, body: options.body });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || '請求失敗：' + res.status);
+  }
+// 安全地解析 JSON，如果真的沒內容就回傳空物件
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function getRecords(memberId) {
+  const rows = await sbFetch(`/sleep_records?member_id=eq.${encodeURIComponent(memberId)}&order=date.desc,created_at.desc`);
+  return rows || [];
+}
+
+async function countRecords(memberId) {
+  const res = await fetch(
+    SUPABASE_URL.replace(/\/$/, '') + `/rest/v1/sleep_records?member_id=eq.${encodeURIComponent(memberId)}&select=id`,
+    {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'count=exact',
+        'Range-Unit': 'items',
+        'Range': '0-0'
+      }
+    }
+  );
+  const countHeader = res.headers.get('content-range');
+  if (countHeader) {
+    const parts = countHeader.split('/');
+    return parseInt(parts[1] || '0', 10);
+  }
+  return 0;
+}
+
+async function insertRecord(record) {
+  await sbFetch('/sleep_records', {
+    method: 'POST',
+    prefer: 'return=minimal',
+    body: JSON.stringify(record)
+  });
+}
+
+async function deleteRecord(id) {
+  await sbFetch(`/sleep_records?id=eq.${id}`, { method: 'DELETE' });
+}
+
+/* ═══════════════════════════════════════════════
+   MEMBERS
+   ═══════════════════════════════════════════════ */
+const MEMBERS = Array.from({length: 50}, (_, i) => {
+  const n = String(i + 1).padStart(7, '0');
+  return 'ycc' + n;
+});
+
+let currentMember = null;
+
+function getBaseUrl() {
+  return window.location.href.split('?')[0];
+}
+
+/* ═══════════════════════════════════════════════
+   SETUP PAGE
+   ═══════════════════════════════════════════════ */
+function showSetup() {
+  document.getElementById('setup-page').style.display = 'block';
+  document.getElementById('admin-page').style.display = 'none';
+  document.getElementById('member-page').style.display = 'none';
+  document.getElementById('cfg-url').value = SUPABASE_URL;
+  document.getElementById('cfg-key').value = SUPABASE_KEY;
+}
+
+function cancelSetup() {
+  document.getElementById('setup-page').style.display = 'none';
+  if (currentMember) {
+    document.getElementById('member-page').style.display = 'block';
+  } else {
+    document.getElementById('admin-page').style.display = 'block';
+  }
+}
+
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const key = document.getElementById('cfg-key').value.trim();
+  if (!url || !key) { alert('請填寫完整的 URL 與 API Key'); return; }
+  localStorage.setItem('sb_url', url);
+  localStorage.setItem('sb_key', key);
+  SUPABASE_URL = url;
+  SUPABASE_KEY = key;
+  document.getElementById('config-banner').classList.add('hidden');
+  document.getElementById('setup-page').style.display = 'none';
+  showToast('✓ 設定已儲存');
+  buildAdminPage();
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PAGE
+   ═══════════════════════════════════════════════ */
+function buildAdminPage() {
+  document.getElementById('admin-page').style.display = 'block';
+  document.getElementById('member-page').style.display = 'none';
+  const grid = document.getElementById('qr-grid');
+  grid.innerHTML = '';
+
+  MEMBERS.forEach(id => {
+    const url = getBaseUrl() + '?member=' + id;
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    card.title = '點擊進入 ' + id;
+    card.innerHTML = `
+      <div class="qr-wrap" id="qr-${id}"></div>
+      <div class="member-id">${id}</div>
+      <div class="record-count" id="cnt-${id}">—</div>
+    `;
+    card.addEventListener('click', () => openMemberPage(id));
+    grid.appendChild(card);
+
+    new QRCode(document.getElementById('qr-' + id), {
+      text: url,
+      width: 100,
+      height: 100,
+      colorDark: '#3C3489',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  });
+
+  if (isConfigured()) refreshCounts();
+}
+
+async function refreshCounts() {
+  if (!isConfigured()) return;
+  for (const id of MEMBERS) {
+    const el = document.getElementById('cnt-' + id);
+    if (!el) continue;
+    try {
+      const cnt = await countRecords(id);
+      el.textContent = cnt > 0 ? cnt + ' 筆紀錄' : '尚無紀錄';
+    } catch {
+      el.textContent = '無法載入';
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   MEMBER PAGE
+   ═══════════════════════════════════════════════ */
+async function openMemberPage(memberId) {
+  currentMember = memberId;
+  document.getElementById('admin-page').style.display = 'none';
+  document.getElementById('member-page').style.display = 'block';
+  document.getElementById('member-label').textContent = memberId;
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = today;
+
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('f-wake-time').value = hh + ':' + mm;
+  document.getElementById('f-sleep-time').value = '23:00';
+
+  document.getElementById('f-quality').value = 5;
+  document.getElementById('q-val').textContent = '5';
+  updateQualityColor(5);
+  document.getElementById('f-note').value = '';
+  document.querySelectorAll('.tag-item.selected').forEach(t => t.classList.remove('selected'));
+
+  await renderHistory();
+  window.scrollTo(0, 0);
+}
+
+async function goBack() {
+  currentMember = null;
+  document.getElementById('member-page').style.display = 'none';
+  buildAdminPage();
+}
+
+/* ═══════════════════════════════════════════════
+   QUALITY HINTS
+   ═══════════════════════════════════════════════ */
+const qualityHints = {
+  1: '非常差', 2: '很差', 3: '差', 4: '稍差',
+  5: '還可以', 6: '普通', 7: '不錯', 8: '很好',
+  9: '非常好', 10: '極佳 🌟'
+};
+
+function updateQualityColor(v) {
+  const hint = document.getElementById('q-hint');
+  hint.textContent = qualityHints[v] || '';
+  const val = document.getElementById('q-val');
+  if (v <= 3) { val.style.color = '#A32D2D'; }
+  else if (v <= 6) { val.style.color = '#BA7517'; }
+  else { val.style.color = '#0F6E56'; }
+}
+
+function toggleTag(el) {
+  el.classList.toggle('selected');
+}
+
+/* ═══════════════════════════════════════════════
+   SUBMIT
+   ═══════════════════════════════════════════════ */
+async function submitRecord() {
+  if (!isConfigured()) {
+    showToast('請先設定 Supabase 連線', true);
+    return;
+  }
+
+  const date = document.getElementById('f-date').value;
+  const sleepTime = document.getElementById('f-sleep-time').value;
+  const wakeTime = document.getElementById('f-wake-time').value;
+  const quality = parseInt(document.getElementById('f-quality').value);
+  const note = document.getElementById('f-note').value.trim();
+  const factors = [...document.querySelectorAll('.tag-item.selected')].map(t => t.textContent);
+
+  if (!date) { alert('請選擇日期'); return; }
+  if (!sleepTime || !wakeTime) { alert('請填寫入睡與起床時間'); return; }
+
+  const duration = calcDuration(sleepTime, wakeTime);
+
+  const record = {
+    member_id: currentMember,
+    date,
+    sleep_time: sleepTime,
+    wake_time: wakeTime,
+    quality,
+    note,
+    factors,
+    duration
+  };
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-spinner"></span>儲存中…';
+
+  try {
+    await insertRecord(record);
+    showToast('✓ 紀錄已儲存至雲端');
+    document.getElementById('f-note').value = '';
+    document.querySelectorAll('.tag-item.selected').forEach(t => t.classList.remove('selected'));
+    document.getElementById('f-quality').value = 5;
+    document.getElementById('q-val').textContent = '5';
+    updateQualityColor(5);
+    await renderHistory();
+  } catch (err) {
+    showToast('儲存失敗：' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '儲存睡眠紀錄';
+  }
+}
+
+function calcDuration(sleep, wake) {
+  const [sh, sm] = sleep.split(':').map(Number);
+  const [wh, wm] = wake.split(':').map(Number);
+  let sleepMins = sh * 60 + sm;
+  let wakeMins = wh * 60 + wm;
+  if (wakeMins <= sleepMins) wakeMins += 24 * 60;
+  const diff = wakeMins - sleepMins;
+  return Math.floor(diff / 60) + '小時' + (diff % 60) + '分';
+}
+
+async function handleDeleteRecord(id) {
+  if (!confirm('確定刪除這筆紀錄？')) return;
+  try {
+    await deleteRecord(id);
+    showToast('✓ 已刪除');
+    await renderHistory();
+  } catch (err) {
+    showToast('刪除失敗：' + err.message, true);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER HISTORY
+   ═══════════════════════════════════════════════ */
+async function renderHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = '<div class="history-empty"><span class="loading-spinner" style="border-top-color:var(--color-primary-mid);border-color:var(--color-border)"></span> 載入中…</div>';
+
+  if (!isConfigured()) {
+    list.innerHTML = '<div class="history-empty">請先設定 Supabase 連線</div>';
+    return;
+  }
+
+  try {
+    const records = await getRecords(currentMember);
+    if (records.length === 0) {
+      list.innerHTML = '<div class="history-empty">尚無紀錄</div>';
+      return;
+    }
+    list.innerHTML = records.map(r => `
+      <div class="record-item">
+        <div class="rec-header">
+          <span class="rec-date">${r.date}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="rec-quality">品質 ${r.quality}/10</span>
+            <button class="del-btn" onclick="handleDeleteRecord(${r.id})" title="刪除">✕</button>
+          </div>
+        </div>
+        <div class="rec-detail">
+          <span>🌙 ${r.sleep_time}</span>
+          <span>☀️ ${r.wake_time}</span>
+          <span>⏱ ${r.duration}</span>
+          ${r.factors && r.factors.length ? '<span>🏷 ' + r.factors.join('、') + '</span>' : ''}
+        </div>
+        ${r.note ? `<div class="rec-note">${r.note}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="history-empty" style="color:var(--color-error)">載入失敗：${err.message}</div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════ */
+function init() {
+  loadConfig();
+
+  if (isConfigured()) {
+    document.getElementById('config-banner').classList.add('hidden');
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const memberId = params.get('member');
+
+  if (memberId && MEMBERS.includes(memberId)) {
+    document.getElementById('config-banner').style.display = 'none';
+    openMemberPage(memberId);
+  } else {
+    buildAdminPage();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
