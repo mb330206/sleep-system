@@ -931,7 +931,7 @@ async function submitRecord() {
   const factors = [...document.querySelectorAll('.tag-item.selected')].map(t => t.textContent);
 
   if (!date) { alert('請選擇日期'); return; }
-  if (!sleepTime || !wakeTime) { alert('請填寫入睡與起床時間'); return; }
+  if (!sleepTime || !wakeTime) { alert('請填寫躺床與起床時間'); return; }
 
   const duration = calcDuration(sleepTime, wakeTime);
 
